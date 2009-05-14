@@ -17,8 +17,21 @@ class Address < ActiveRecord::Base
   belongs_to :region
   belongs_to :country
   
-  validates_presence_of :addressable_id, :addressable_type, :street_1, :city,
-                        :postal_code, :country_id
+# Comment the following line if you want to be able to do a mass assignment to a parent class
+# 
+# == Examples
+# 
+#   @user = User.new(params[:user]) # where the params["user"] contains the addresses collection
+#   
+#   class User < ActiveRecord::Base
+#     has_addresses
+#     validates_associated :addresses
+#     accepts_nested_attributes_for :addresses
+#   end
+
+  validates_presence_of :addressable_id, :addressable_type
+  
+  validates_presence_of :street_1, :city, :postal_code, :country_id
   validates_presence_of :region_id, :if => :known_region_required?
   validates_presence_of :custom_region, :if => :custom_region_required?
   
@@ -26,6 +39,7 @@ class Address < ActiveRecord::Base
                   :custom_region, :country
   
   before_validation :ensure_exclusive_references, :set_region_attributes
+  after_validation :add_errors_on_associations
   
   # Gets the name of the region that this address is for (whether it is a
   # custom or known region in the database)
@@ -123,4 +137,11 @@ class Address < ActiveRecord::Base
     def set_region_attributes
       self.country = region.country if region
     end
+    
+    # Adds errors to associations for easy mass assignment
+    def add_errors_on_associations
+      self.errors.add(:country, "is missing") if self.errors.on(:country_id)
+      self.errors.add(:region, "is missing") if self.errors.on(:region_id)
+    end
+    
 end
